@@ -62,6 +62,14 @@ def manifest():
         m[f"find-{L}"]   = f"Find the letter {L}."
         m[f"which-{L}"]  = f"{snd}, {snd}. Which one starts with {snd}?"
         m[f"yes-{L}"]    = f"Yes! {L}!"
+        # Isolated phoneme for the Build (blending) screen. TTS is poor at
+        # these — re-recording phon-*.mp3 in your own voice is well worth it.
+        m[f"phon-{L}"]   = snd
+    # Whole CVC words for the Build screen (must match CVC in abc-app.html).
+    for w in ("cat","dog","pig","hen","sun","bus","bed","cup","hat","box",
+              "fox","bug","van","jet","log","pot","pin","fan","map","bat",
+              "net","ten"):
+        m[f"word-{w}"] = w
     return m
 
 async def build():

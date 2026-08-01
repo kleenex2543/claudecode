@@ -166,6 +166,39 @@
   @keyframes shake{25%{transform:translateX(-8px);}75%{transform:translateX(8px);}}
   .score{text-align:center;font-size:15px;opacity:.75;margin-top:16px;letter-spacing:2px;}
 
+  /* ---------- learning path ---------- */
+  .tile.next-up{outline:4px solid var(--mint);outline-offset:-4px;animation:breathe 1.7s ease-in-out infinite;}
+  @keyframes breathe{50%{box-shadow:0 5px 0 rgba(0,0,0,.28), 0 0 0 6px rgba(63,208,160,.35);}}
+  .tile .next{
+    position:absolute;bottom:3px;left:6px;font-size:9px;font-weight:800;color:var(--mint);
+    text-transform:uppercase;letter-spacing:.5px;font-family:var(--display);
+  }
+  .sortbtn{
+    border:0;cursor:pointer;border-radius:10px;padding:4px 10px;
+    font-family:var(--display);font-weight:800;font-size:11px;
+    background:rgba(255,255,255,.12);color:var(--paper);
+  }
+  .sortbtn[data-on="1"]{background:var(--mango);color:var(--ink);}
+
+  /* ---------- build (blending) ---------- */
+  .build-pic{
+    background:var(--paper);color:var(--ink);border-radius:24px;height:150px;margin-top:12px;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    box-shadow:0 6px 0 rgba(0,0,0,.28);
+  }
+  .build-pic .q{font-size:66px;opacity:.25;}
+  .build-pic .emoji{font-size:78px;line-height:1;}
+  .build-pic .cap{font-family:var(--letterface);font-weight:700;font-size:26px;margin-top:2px;}
+  .build-pic.show{animation:pop .4s ease;}
+  .word-slots{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:14px;}
+  .slot{
+    aspect-ratio:1;border:0;border-radius:22px;background:var(--paper);color:var(--ink);
+    font-family:var(--letterface);font-weight:700;font-size:clamp(40px,14vw,68px);
+    box-shadow:0 6px 0 rgba(0,0,0,.28);cursor:pointer;
+    display:flex;align-items:center;justify-content:center;transition:background .12s, transform .12s;
+  }
+  .slot.lit{background:var(--mint);transform:translateY(3px);box-shadow:0 3px 0 rgba(0,0,0,.28);}
+
   /* ---------- bottom nav ---------- */
   nav{
     position:fixed;bottom:0;left:0;right:0;display:flex;justify-content:center;gap:8px;
@@ -240,6 +273,7 @@
 <nav id="nav">
   <button data-go="home"><span class="ico">🔤</span>Letters</button>
   <button data-go="game"><span class="ico">🎯</span>Play</button>
+  <button data-go="build"><span class="ico">📖</span>Build</button>
   <button data-go="sing"><span class="ico">🎵</span>Sing</button>
 </nav>
 
@@ -274,9 +308,26 @@ const DATA = [
 ];
 const byL = {}; DATA.forEach(d => byL[d.L] = d);
 
+/* Teaching order (synthetic phonics "satpin" sequence) rather than A–Z, so the
+   first letters learned can already build real words: sat, tap, pin, nap … */
+const ORDER = ["S","A","T","I","P","N","C","K","E","H","R","M","D",
+               "G","O","U","L","F","B","J","Z","W","V","Y","X","Q"];
+
+/* Simple consonant–vowel–consonant words for the Build (blending) screen.
+   Each is three letters with a short vowel and a clear picture. */
+const CVC = [
+  {w:"cat",e:"🐱"},{w:"dog",e:"🐶"},{w:"pig",e:"🐷"},{w:"hen",e:"🐔"},
+  {w:"sun",e:"☀️"},{w:"bus",e:"🚌"},{w:"bed",e:"🛏️"},{w:"cup",e:"🥤"},
+  {w:"hat",e:"🎩"},{w:"box",e:"📦"},{w:"fox",e:"🦊"},{w:"bug",e:"🐛"},
+  {w:"van",e:"🚐"},{w:"jet",e:"✈️"},{w:"log",e:"🪵"},{w:"pot",e:"🍲"},
+  {w:"pin",e:"📌"},{w:"fan",e:"🪭"},{w:"map",e:"🗺️"},{w:"bat",e:"🦇"},
+  {w:"net",e:"🥅"},{w:"ten",e:"🔟"}
+];
+
 /* ---------------- state ---------------- */
 const KEY = "letterboard-state";
-let S = { name:"", phonics:false, videos:{}, song:"", stars:{}, audio:false, audioBase:"audio/" };
+let S = { name:"", phonics:false, videos:{}, song:"", stars:{}, audio:false, audioBase:"audio/",
+          sort:"path", built:0 };
 let screen = "home", currentLetter = "A", saveTimer = null;
 
 async function load(){
@@ -395,12 +446,13 @@ function openVideo(title, id, query){
 /* ---------------- screens ---------------- */
 const screenEl = document.getElementById("screen");
 
-function tileHtml(d, isName){
+function tileHtml(d, isName, isNext){
   const n = starsFor(d.L);
-  return '<button class="tile' + (isName ? ' name-letter' : '') + '" data-letter="' + d.L + '">' +
+  return '<button class="tile' + (isName ? ' name-letter' : '') + (isNext ? ' next-up' : '') +
+    '" data-letter="' + d.L + '">' +
     '<span>' + d.L + '</span><span class="lower">' + d.L.toLowerCase() + '</span>' +
     (n ? '<span class="stars">' + "★".repeat(n) + '</span>' : '') +
-    (isName ? '<span class="heart">💛</span>' : '') +
+    (isNext ? '<span class="next">start</span>' : (isName ? '<span class="heart">💛</span>' : '')) +
     '</button>';
 }
 
@@ -418,8 +470,13 @@ function renderHome(){
       mine.map(L => tileHtml(byL[L], true)).join("") + '</div>';
   }
 
-  html += '<div class="shelf-title">All the letters</div><div class="grid">' +
-    DATA.map(d => tileHtml(d, mine.includes(d.L))).join("") + '</div>';
+  const nextUp = ORDER.find(L => starsFor(L) < 3);
+  const ordered = (S.sort === "az") ? DATA.map(d => d.L) : ORDER;
+  html += '<div class="shelf-title">' + (S.sort === "az" ? "All letters" : "Learning path") +
+    '<button class="sortbtn" data-sort="path" data-on="' + (S.sort !== "az" ? "1" : "0") + '">Path</button>' +
+    '<button class="sortbtn" data-sort="az" data-on="' + (S.sort === "az" ? "1" : "0") + '">A–Z</button>' +
+    '</div><div class="grid">' +
+    ordered.map(L => tileHtml(byL[L], mine.includes(L), L === nextUp)).join("") + '</div>';
 
   const total = DATA.reduce((a,d) => a + starsFor(d.L), 0);
   html += '<div class="score">' + total + ' of 78 stars</div>';
@@ -579,6 +636,59 @@ function answer(L, btn){
   }
 }
 
+/* ---------------- build: blend sounds into a word ---------------- */
+let buildWord = null;
+function pickCvc(){
+  let d;
+  do { d = CVC[Math.floor(Math.random() * CVC.length)]; }
+  while(CVC.length > 1 && buildWord && d.w === buildWord.w);
+  return d;
+}
+function renderBuild(){
+  const d = pickCvc(); buildWord = d;
+  const letters = d.w.toUpperCase().split("");
+  screenEl.innerHTML =
+    '<div class="prompt">Blend the sounds<small>Tap each letter, then “Blend it”</small></div>' +
+    '<div class="build-pic" id="buildPic"><span class="q">❓</span></div>' +
+    '<div class="word-slots">' +
+      letters.map((L, i) => '<button class="slot" data-slot="' + i + '" data-l="' + L + '">' +
+        L.toLowerCase() + '</button>').join("") +
+    '</div>' +
+    '<button class="btn wide" id="blendBtn">🔊 Blend it</button>' +
+    '<button class="btn wide ghost" id="nextWord">Next word →</button>' +
+    '<div class="score">' + "📖".repeat(Math.min(S.built || 0, 10)) + '</div>';
+
+  screenEl.querySelectorAll(".slot").forEach(s => {
+    s.onclick = () => {
+      const L = s.dataset.l;
+      s.classList.add("lit");
+      setTimeout(() => s.classList.remove("lit"), 420);
+      speak("phon-" + L, byL[L].say, 0.7);
+    };
+  });
+  document.getElementById("blendBtn").onclick = () => blend(d, letters);
+  document.getElementById("nextWord").onclick = renderBuild;
+}
+function blend(d, letters){
+  const slots = [...screenEl.querySelectorAll(".slot")];
+  let i = 0;
+  const step = () => {
+    slots.forEach(s => s.classList.remove("lit"));
+    if(i < letters.length){
+      slots[i].classList.add("lit");
+      speak("phon-" + letters[i], byL[letters[i]].say, 0.7);
+      i++; setTimeout(step, 720);
+    } else {
+      speak("word-" + d.w, d.w);
+      const pic = document.getElementById("buildPic");
+      pic.innerHTML = '<span class="emoji">' + d.e + '</span><span class="cap">' + d.w + '</span>';
+      pic.classList.add("show");
+      S.built = (S.built || 0) + 1; save(); cheer();
+    }
+  };
+  step();
+}
+
 /* ---------------- parent area ---------------- */
 function openParent(){
   const a = 3 + Math.floor(Math.random() * 6), b = 4 + Math.floor(Math.random() * 6);
@@ -668,6 +778,7 @@ function render(){
   if(screen === "home") renderHome();
   else if(screen === "letter") renderLetter(currentLetter);
   else if(screen === "game") renderGame();
+  else if(screen === "build") renderBuild();
 }
 
 document.getElementById("nav").addEventListener("click", e => {
@@ -683,6 +794,7 @@ document.getElementById("nav").addEventListener("click", e => {
 
 screenEl.addEventListener("click", e => {
   const b = e.target.closest("button"); if(!b) return;
+  if(b.dataset.sort){ S.sort = b.dataset.sort === "az" ? "az" : "path"; save(); renderHome(); return; }
   if(b.dataset.letter){ currentLetter = b.dataset.letter; screen = "letter"; render(); return; }
   if(b.dataset.go){ screen = b.dataset.go; render(); return; }
   if(b.dataset.mode){
