@@ -1,0 +1,707 @@
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Letter Board</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Andika:wght@400;700&family=Baloo+2:wght@600;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --board:#2B3A55;
+    --board-2:#22304a;
+    --paper:#FFF8EC;
+    --ink:#22304A;
+    --mango:#FFB23F;
+    --coral:#FF6B6B;
+    --mint:#3FD0A0;
+    --sky:#56C2FF;
+    --lilac:#B08BFF;
+    --butter:#FFE066;
+    --star:#FFC93C;
+    --display:"Baloo 2", ui-rounded, "SF Pro Rounded", "Segoe UI", system-ui, sans-serif;
+    --letterface:"Andika", ui-rounded, "SF Pro Rounded", "Segoe UI", system-ui, sans-serif;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;height:100%;}
+  body{
+    font-family:var(--display);
+    background:
+      radial-gradient(1200px 700px at 50% -10%, #35486a 0%, var(--board) 45%, var(--board-2) 100%);
+    color:var(--paper);
+    overscroll-behavior:none;
+    touch-action:manipulation;
+  }
+  #app{max-width:900px;margin:0 auto;min-height:100%;display:flex;flex-direction:column;}
+
+  /* ---------- header ---------- */
+  header{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:14px 16px 6px;
+  }
+  .brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:20px;letter-spacing:.2px;}
+  .brand .pin{width:14px;height:14px;border-radius:50%;background:var(--coral);box-shadow:0 2px 0 rgba(0,0,0,.25);}
+  .gear{
+    width:44px;height:44px;border-radius:14px;border:0;cursor:pointer;
+    background:rgba(255,255,255,.10);color:var(--paper);font-size:20px;
+  }
+  .gear:active{transform:scale(.94);}
+
+  /* ---------- shared ---------- */
+  main{flex:1;padding:0 14px 96px;}
+  .shelf-title{
+    font-size:15px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;
+    opacity:.75;margin:18px 4px 10px;display:flex;align-items:center;gap:8px;
+  }
+  .shelf-title::after{content:"";flex:1;height:2px;background:rgba(255,255,255,.14);border-radius:2px;}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(78px,1fr));gap:12px;}
+  .tile{
+    position:relative;aspect-ratio:1;border:0;cursor:pointer;padding:0;
+    border-radius:18px 20px 17px 19px;
+    background:var(--paper);color:var(--ink);
+    font-family:var(--letterface);font-weight:700;
+    font-size:clamp(30px,9vw,42px);line-height:1;
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 5px 0 rgba(0,0,0,.28), inset 0 -4px 0 rgba(0,0,0,.06);
+    transition:transform .12s ease, box-shadow .12s ease;
+  }
+  .tile:nth-child(6n+1){transform:rotate(-2.5deg);}
+  .tile:nth-child(6n+2){transform:rotate(1.8deg);}
+  .tile:nth-child(6n+3){transform:rotate(-1.2deg);}
+  .tile:nth-child(6n+4){transform:rotate(2.6deg);}
+  .tile:nth-child(6n+5){transform:rotate(-1.9deg);}
+  .tile:active{transform:translateY(4px) rotate(0deg);box-shadow:0 1px 0 rgba(0,0,0,.28);}
+  .tile .lower{font-size:.5em;opacity:.45;margin-left:.12em;align-self:flex-end;margin-bottom:.28em;}
+  .tile .stars{
+    position:absolute;top:5px;right:7px;font-size:11px;letter-spacing:-1px;color:var(--star);
+  }
+  .tile.name-letter{outline:4px solid var(--mango);outline-offset:-4px;}
+  .tile .heart{position:absolute;bottom:4px;left:7px;font-size:12px;}
+
+  /* ---------- name prompt ---------- */
+  .card{
+    background:rgba(255,255,255,.08);border-radius:20px;padding:16px;margin:16px 2px;
+    border:2px dashed rgba(255,255,255,.18);
+  }
+  .card h3{margin:0 0 6px;font-size:17px;}
+  .card p{margin:0 0 12px;font-size:14px;line-height:1.5;opacity:.8;font-family:var(--letterface);}
+  input[type=text]{
+    width:100%;padding:14px;border-radius:14px;border:0;font-size:17px;
+    font-family:var(--letterface);background:var(--paper);color:var(--ink);
+  }
+  .btn{
+    border:0;cursor:pointer;border-radius:16px;padding:14px 18px;font-family:var(--display);
+    font-weight:800;font-size:16px;background:var(--mango);color:var(--ink);
+    box-shadow:0 4px 0 rgba(0,0,0,.3);
+  }
+  .btn:active{transform:translateY(3px);box-shadow:0 1px 0 rgba(0,0,0,.3);}
+  .btn.ghost{background:rgba(255,255,255,.12);color:var(--paper);box-shadow:none;}
+  .btn.wide{width:100%;margin-top:10px;}
+  .row{display:flex;gap:10px;flex-wrap:wrap;}
+
+  /* ---------- letter screen ---------- */
+  .back{
+    background:none;border:0;color:var(--paper);font-family:var(--display);font-weight:800;
+    font-size:16px;padding:10px 4px;cursor:pointer;opacity:.85;
+  }
+  .letter-hero{
+    background:var(--paper);color:var(--ink);border-radius:26px;padding:18px;
+    box-shadow:0 8px 0 rgba(0,0,0,.28);text-align:center;
+  }
+  .big-letters{
+    font-family:var(--letterface);font-weight:700;font-size:clamp(76px,26vw,140px);line-height:1;
+    display:flex;align-items:baseline;justify-content:center;gap:.12em;cursor:pointer;
+  }
+  .big-letters .lc{opacity:.5;}
+  .word{font-family:var(--letterface);font-size:22px;font-weight:700;margin-top:4px;}
+  .word .emoji{font-size:34px;display:block;margin-bottom:2px;}
+  .tap-hint{font-size:13px;opacity:.5;font-family:var(--letterface);margin-top:6px;}
+
+  .trace-wrap{
+    position:relative;margin-top:14px;background:var(--paper);border-radius:24px;
+    box-shadow:0 8px 0 rgba(0,0,0,.28);overflow:hidden;height:220px;
+  }
+  .trace-ghost{
+    position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    font-family:var(--letterface);font-weight:700;font-size:170px;color:rgba(34,48,74,.13);
+    user-select:none;pointer-events:none;line-height:1;
+  }
+  canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;}
+  .trace-tools{position:absolute;bottom:8px;right:8px;display:flex;gap:8px;}
+  .mini{
+    border:0;border-radius:12px;padding:9px 12px;font-family:var(--display);font-weight:800;
+    font-size:14px;background:rgba(34,48,74,.1);color:var(--ink);cursor:pointer;
+  }
+  .mini.go{background:var(--mint);}
+  .trace-label{
+    position:absolute;top:10px;left:14px;font-size:13px;font-weight:800;color:rgba(34,48,74,.45);
+    text-transform:uppercase;letter-spacing:1.2px;
+  }
+
+  .phonics-box{
+    margin-top:14px;background:rgba(63,208,160,.16);border:2px solid rgba(63,208,160,.5);
+    border-radius:20px;padding:14px;display:flex;align-items:center;gap:14px;
+  }
+  .phonics-box .sound{font-family:var(--letterface);font-size:30px;font-weight:700;color:var(--mint);}
+  .phonics-box .txt{flex:1;font-family:var(--letterface);font-size:15px;line-height:1.4;}
+
+  .nav-letters{display:flex;justify-content:space-between;margin-top:14px;gap:10px;}
+
+  /* ---------- game ---------- */
+  .prompt{
+    text-align:center;font-size:20px;font-weight:800;margin:10px 0 4px;
+  }
+  .prompt small{display:block;font-size:14px;opacity:.7;font-weight:400;font-family:var(--letterface);margin-top:4px;}
+  .choices{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:18px;}
+  .choice{
+    aspect-ratio:1;border:0;border-radius:22px;background:var(--paper);color:var(--ink);
+    font-family:var(--letterface);font-weight:700;font-size:clamp(38px,13vw,64px);
+    box-shadow:0 6px 0 rgba(0,0,0,.28);cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .choice.pic{font-size:clamp(34px,11vw,54px);flex-direction:column;gap:2px;}
+  .choice.pic span.cap{font-size:13px;font-family:var(--letterface);opacity:.6;}
+  .choice:active{transform:translateY(4px);box-shadow:0 2px 0 rgba(0,0,0,.28);}
+  .choice.right{background:var(--mint);animation:pop .35s ease;}
+  .choice.wrong{background:#ffd9d9;animation:shake .35s ease;}
+  @keyframes pop{50%{transform:scale(1.12);}}
+  @keyframes shake{25%{transform:translateX(-8px);}75%{transform:translateX(8px);}}
+  .score{text-align:center;font-size:15px;opacity:.75;margin-top:16px;letter-spacing:2px;}
+
+  /* ---------- bottom nav ---------- */
+  nav{
+    position:fixed;bottom:0;left:0;right:0;display:flex;justify-content:center;gap:8px;
+    padding:10px 12px calc(10px + env(safe-area-inset-bottom));
+    background:linear-gradient(180deg, rgba(34,48,74,0), rgba(34,48,74,.95) 40%);
+  }
+  nav button{
+    flex:1;max-width:150px;border:0;cursor:pointer;border-radius:18px;padding:11px 6px;
+    font-family:var(--display);font-weight:800;font-size:14px;
+    background:rgba(255,255,255,.12);color:var(--paper);
+  }
+  nav button .ico{display:block;font-size:20px;margin-bottom:2px;}
+  nav button[data-active="1"]{background:var(--mango);color:var(--ink);}
+
+  /* ---------- modal ---------- */
+  .veil{
+    position:fixed;inset:0;background:rgba(15,22,36,.82);display:flex;align-items:center;
+    justify-content:center;padding:16px;z-index:50;
+  }
+  .sheet{
+    background:var(--board);border:2px solid rgba(255,255,255,.16);border-radius:24px;
+    width:100%;max-width:620px;max-height:88vh;overflow:auto;padding:18px;
+  }
+  .sheet h2{margin:0 0 4px;font-size:20px;}
+  .sheet .sub{font-family:var(--letterface);font-size:14px;opacity:.75;margin:0 0 14px;line-height:1.5;}
+  .vid{position:relative;padding-top:56.25%;border-radius:16px;overflow:hidden;background:#000;}
+  .vid iframe{position:absolute;inset:0;width:100%;height:100%;border:0;}
+  a.link{
+    display:inline-block;margin-top:12px;color:var(--sky);font-family:var(--letterface);
+    font-weight:700;font-size:15px;
+  }
+  .vidrow{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+  .vidrow b{width:26px;font-family:var(--letterface);font-size:20px;text-align:center;}
+  .vidrow input{flex:1;padding:9px;font-size:13px;border-radius:10px;}
+  .toggle{
+    display:flex;align-items:center;justify-content:space-between;gap:12px;
+    background:rgba(255,255,255,.08);border-radius:16px;padding:14px;margin:10px 0;
+  }
+  .toggle .t-txt{font-family:var(--letterface);font-size:14px;opacity:.8;line-height:1.45;}
+  .switch{
+    width:60px;height:34px;border-radius:20px;border:0;cursor:pointer;flex:none;
+    background:rgba(255,255,255,.2);position:relative;transition:background .18s;
+  }
+  .switch i{
+    position:absolute;top:4px;left:4px;width:26px;height:26px;border-radius:50%;
+    background:var(--paper);transition:left .18s;
+  }
+  .switch[data-on="1"]{background:var(--mint);}
+  .switch[data-on="1"] i{left:30px;}
+  .gate-keys{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px;}
+
+  /* ---------- celebration ---------- */
+  .confetti{position:fixed;inset:0;pointer-events:none;z-index:60;overflow:hidden;}
+  .confetti span{position:absolute;font-size:26px;animation:fall 1.5s ease-in forwards;}
+  @keyframes fall{
+    0%{transform:translateY(0) rotate(0);opacity:1;}
+    100%{transform:translateY(90vh) rotate(340deg);opacity:0;}
+  }
+  @media (prefers-reduced-motion: reduce){
+    *{animation:none !important;transition:none !important;}
+    .tile{transform:none !important;}
+  }
+</style>
+
+<div id="app">
+  <header>
+    <div class="brand"><span class="pin"></span><span id="brandTxt">Letter Board</span></div>
+    <button class="gear" id="gearBtn" aria-label="Grown-up settings">⚙</button>
+  </header>
+  <main id="screen"></main>
+</div>
+<nav id="nav">
+  <button data-go="home"><span class="ico">🔤</span>Letters</button>
+  <button data-go="game"><span class="ico">🎯</span>Play</button>
+  <button data-go="sing"><span class="ico">🎵</span>Sing</button>
+</nav>
+
+<script>
+const DATA = [
+  {L:"A",w:"Apple",e:"🍎",s:"/a/",say:"aah"},
+  {L:"B",w:"Ball",e:"⚽",s:"/b/",say:"buh"},
+  {L:"C",w:"Cat",e:"🐱",s:"/c/",say:"kuh"},
+  {L:"D",w:"Dog",e:"🐶",s:"/d/",say:"duh"},
+  {L:"E",w:"Egg",e:"🥚",s:"/e/",say:"eh"},
+  {L:"F",w:"Fish",e:"🐟",s:"/f/",say:"fff"},
+  {L:"G",w:"Goat",e:"🐐",s:"/g/",say:"guh"},
+  {L:"H",w:"Hat",e:"👒",s:"/h/",say:"huh"},
+  {L:"I",w:"Igloo",e:"🧊",s:"/i/",say:"ih"},
+  {L:"J",w:"Jug",e:"🫗",s:"/j/",say:"juh"},
+  {L:"K",w:"Kite",e:"🪁",s:"/k/",say:"kuh"},
+  {L:"L",w:"Leaf",e:"🍃",s:"/l/",say:"lll"},
+  {L:"M",w:"Moon",e:"🌙",s:"/m/",say:"mmm"},
+  {L:"N",w:"Nest",e:"🪺",s:"/n/",say:"nnn"},
+  {L:"O",w:"Octopus",e:"🐙",s:"/o/",say:"awh"},
+  {L:"P",w:"Pig",e:"🐷",s:"/p/",say:"puh"},
+  {L:"Q",w:"Queen",e:"👑",s:"/q/",say:"kwuh"},
+  {L:"R",w:"Rainbow",e:"🌈",s:"/r/",say:"rrr"},
+  {L:"S",w:"Sun",e:"☀️",s:"/s/",say:"sss"},
+  {L:"T",w:"Tree",e:"🌳",s:"/t/",say:"tuh"},
+  {L:"U",w:"Umbrella",e:"☂️",s:"/u/",say:"uh"},
+  {L:"V",w:"Van",e:"🚐",s:"/v/",say:"vvv"},
+  {L:"W",w:"Watermelon",e:"🍉",s:"/w/",say:"wuh"},
+  {L:"X",w:"Box",e:"📦",s:"/x/",say:"ks"},
+  {L:"Y",w:"Yoyo",e:"🪀",s:"/y/",say:"yuh"},
+  {L:"Z",w:"Zebra",e:"🦓",s:"/z/",say:"zzz"}
+];
+const byL = {}; DATA.forEach(d => byL[d.L] = d);
+
+/* ---------------- state ---------------- */
+const KEY = "letterboard-state";
+let S = { name:"", phonics:false, videos:{}, song:"", stars:{}, audio:false, audioBase:"audio/" };
+let screen = "home", currentLetter = "A", saveTimer = null;
+
+async function load(){
+  try{
+    if(window.storage){
+      const r = await window.storage.get(KEY);
+      if(r && r.value) S = Object.assign(S, JSON.parse(r.value));
+    } else {
+      const v = localStorage.getItem(KEY);
+      if(v) S = Object.assign(S, JSON.parse(v));
+    }
+  }catch(e){ /* first run — nothing saved yet */ }
+}
+function save(){
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(async () => {
+    const v = JSON.stringify(S);
+    try{
+      if(window.storage) await window.storage.set(KEY, v);
+      else localStorage.setItem(KEY, v);
+    }
+    catch(e){ console.warn("Could not save progress", e); }
+  }, 250);
+}
+function starsFor(L){ const s = S.stars[L] || {}; return (s.seen?1:0)+(s.trace?1:0)+(s.game?1:0); }
+function award(L, kind){
+  S.stars[L] = S.stars[L] || {};
+  if(S.stars[L][kind]) return false;
+  S.stars[L][kind] = 1; save(); return true;
+}
+function nameLetters(){
+  return [...new Set((S.name||"").toUpperCase().split("").filter(c => byL[c]))];
+}
+
+/* ---------------- voice ---------------- */
+let voice = null;
+function pickVoice(){
+  const vs = speechSynthesis.getVoices();
+  if(!vs.length) return;
+  voice = vs.find(v => /en-AU/i.test(v.lang)) || vs.find(v => /en-GB/i.test(v.lang))
+       || vs.find(v => /^en/i.test(v.lang)) || vs[0];
+}
+if("speechSynthesis" in window){
+  pickVoice();
+  speechSynthesis.onvoiceschanged = pickVoice;
+}
+function say(text, rate){
+  if(!("speechSynthesis" in window)) return;
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.rate = rate || 0.8; u.pitch = 1.05;
+  if(voice) u.voice = voice;
+  speechSynthesis.speak(u);
+}
+
+/* Plays a pre-generated clip if a voice pack is switched on; otherwise falls
+   back to the device's built-in synthesiser. Filenames are the key + .mp3 */
+let clip = null;
+function speak(key, text, rate){
+  if(!S.audio) return say(text, rate);
+  if(clip){ clip.pause(); clip = null; }
+  if("speechSynthesis" in window) speechSynthesis.cancel();
+  const a = new Audio((S.audioBase || "audio/") + key + ".mp3");
+  clip = a;
+  a.onerror = () => say(text, rate);
+  a.play().catch(() => say(text, rate));
+}
+
+/* ---------------- celebration ---------------- */
+function cheer(){
+  const box = document.createElement("div");
+  box.className = "confetti";
+  const bits = ["⭐","🎉","✨","🌟","🎈"];
+  for(let i=0;i<18;i++){
+    const s = document.createElement("span");
+    s.textContent = bits[i % bits.length];
+    s.style.left = Math.random()*100 + "%";
+    s.style.top = (-10 - Math.random()*20) + "%";
+    s.style.animationDelay = (Math.random()*0.4) + "s";
+    box.appendChild(s);
+  }
+  document.body.appendChild(box);
+  setTimeout(() => box.remove(), 2100);
+}
+
+/* ---------------- video ---------------- */
+function parseId(v){
+  if(!v) return "";
+  v = v.trim();
+  const m = v.match(/(?:v=|youtu\.be\/|embed\/|shorts\/)([A-Za-z0-9_-]{11})/);
+  if(m) return m[1];
+  if(/^[A-Za-z0-9_-]{11}$/.test(v)) return v;
+  return "";
+}
+function searchUrl(q){
+  return "https://www.youtube.com/results?search_query=" + encodeURIComponent(q);
+}
+function openVideo(title, id, query){
+  const veil = document.createElement("div");
+  veil.className = "veil";
+  const body = id
+    ? '<div class="vid"><iframe src="https://www.youtube-nocookie.com/embed/' + id +
+      '?rel=0&modestbranding=1" allow="autoplay; encrypted-media" allowfullscreen></iframe></div>' +
+      '<a class="link" href="https://www.youtube.com/watch?v=' + id + '" target="_blank" rel="noopener">Open on YouTube ↗</a>'
+    : '<p class="sub">No video saved for this yet. Tap below to find one, then paste the link into ⚙ Grown-ups so it plays right here next time.</p>' +
+      '<a class="link" href="' + searchUrl(query) + '" target="_blank" rel="noopener">Search YouTube for “' + query + '” ↗</a>';
+  veil.innerHTML =
+    '<div class="sheet"><h2>' + title + '</h2>' + body +
+    '<button class="btn wide ghost" data-close="1">Close</button></div>';
+  veil.addEventListener("click", e => {
+    if(e.target === veil || e.target.dataset.close) veil.remove();
+  });
+  document.body.appendChild(veil);
+}
+
+/* ---------------- screens ---------------- */
+const screenEl = document.getElementById("screen");
+
+function tileHtml(d, isName){
+  const n = starsFor(d.L);
+  return '<button class="tile' + (isName ? ' name-letter' : '') + '" data-letter="' + d.L + '">' +
+    '<span>' + d.L + '</span><span class="lower">' + d.L.toLowerCase() + '</span>' +
+    (n ? '<span class="stars">' + "★".repeat(n) + '</span>' : '') +
+    (isName ? '<span class="heart">💛</span>' : '') +
+    '</button>';
+}
+
+function renderHome(){
+  const mine = nameLetters();
+  let html = "";
+
+  if(!S.name){
+    html += '<div class="card"><h3>Whose letters are these?</h3>' +
+      '<p>Pop her first name in and those letters get pinned to the top of the board — the ones she already knows become the way in to all the rest.</p>' +
+      '<input type="text" id="nameIn" placeholder="First name" autocomplete="off">' +
+      '<button class="btn wide" id="nameGo">Pin my letters</button></div>';
+  } else {
+    html += '<div class="shelf-title">' + S.name + "'s letters" + '</div><div class="grid">' +
+      mine.map(L => tileHtml(byL[L], true)).join("") + '</div>';
+  }
+
+  html += '<div class="shelf-title">All the letters</div><div class="grid">' +
+    DATA.map(d => tileHtml(d, mine.includes(d.L))).join("") + '</div>';
+
+  const total = DATA.reduce((a,d) => a + starsFor(d.L), 0);
+  html += '<div class="score">' + total + ' of 78 stars</div>';
+  screenEl.innerHTML = html;
+
+  const go = document.getElementById("nameGo");
+  if(go) go.onclick = () => {
+    const v = document.getElementById("nameIn").value.trim();
+    if(!v) return;
+    S.name = v.charAt(0).toUpperCase() + v.slice(1); save(); render();
+  };
+}
+
+function renderLetter(L){
+  const d = byL[L];
+  const idx = DATA.indexOf(d);
+  const prev = DATA[(idx + 25) % 26].L, next = DATA[(idx + 1) % 26].L;
+  award(L, "seen");
+
+  let html = '<button class="back" data-go="home">← Back to the board</button>' +
+    '<div class="letter-hero">' +
+      '<div class="big-letters" id="hero"><span>' + L + '</span><span class="lc">' + L.toLowerCase() + '</span></div>' +
+      '<div class="word"><span class="emoji">' + d.e + '</span>' + L + ' is for ' + d.w + '</div>' +
+      '<div class="tap-hint">Tap the letter to hear it</div>' +
+    '</div>';
+
+  if(S.phonics){
+    html += '<div class="phonics-box"><div class="sound">' + d.s + '</div>' +
+      '<div class="txt">' + L + ' says ' + d.s + ' — like at the start of <b>' + d.w.toLowerCase() + '</b>.</div>' +
+      '<button class="mini go" id="soundBtn">🔊</button></div>';
+  }
+
+  html += '<div class="trace-wrap">' +
+      '<div class="trace-label">Trace it</div>' +
+      '<div class="trace-ghost">' + L + l(L) + '</div>' +
+      '<canvas id="pad"></canvas>' +
+      '<div class="trace-tools"><button class="mini" id="clearPad">Clear</button>' +
+      '<button class="mini go" id="donePad">Done ✓</button></div>' +
+    '</div>';
+
+  html += '<button class="btn wide" id="vidBtn">▶ Watch the ' + L + ' video</button>';
+  html += '<div class="nav-letters">' +
+      '<button class="btn ghost" data-letter="' + prev + '">← ' + prev + '</button>' +
+      '<button class="btn ghost" data-letter="' + next + '">' + next + ' →</button>' +
+    '</div>';
+
+  screenEl.innerHTML = html;
+
+  const speakLetter = () => speak("letter-" + L, L + "... " + L + " is for " + d.w);
+  document.getElementById("hero").onclick = speakLetter;
+  speakLetter();
+
+  const sb = document.getElementById("soundBtn");
+  if(sb) sb.onclick = () => speak("sound-" + L, d.say + ", " + d.say + ", " + d.w, 0.7);
+
+  document.getElementById("vidBtn").onclick = () => {
+    openVideo("Letter " + L, parseId(S.videos[L]), "letter " + L + " song for kids phonics");
+  };
+
+  setupPad(L);
+}
+function l(L){ return L.toLowerCase(); }
+
+/* ---------------- tracing ---------------- */
+function setupPad(L){
+  const cv = document.getElementById("pad");
+  if(!cv) return;
+  const dpr = window.devicePixelRatio || 1;
+  const r = cv.getBoundingClientRect();
+  cv.width = r.width * dpr; cv.height = r.height * dpr;
+  const ctx = cv.getContext("2d");
+  ctx.scale(dpr, dpr);
+  ctx.lineWidth = 14; ctx.lineCap = "round"; ctx.lineJoin = "round";
+  ctx.strokeStyle = "#FF6B6B";
+  let drawing = false, drew = false;
+
+  const pos = e => {
+    const b = cv.getBoundingClientRect();
+    return { x: e.clientX - b.left, y: e.clientY - b.top };
+  };
+  cv.addEventListener("pointerdown", e => {
+    drawing = true; drew = true; cv.setPointerCapture(e.pointerId);
+    const p = pos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x + .1, p.y); ctx.stroke();
+  });
+  cv.addEventListener("pointermove", e => {
+    if(!drawing) return;
+    const p = pos(e); ctx.lineTo(p.x, p.y); ctx.stroke();
+  });
+  cv.addEventListener("pointerup", () => drawing = false);
+  cv.addEventListener("pointercancel", () => drawing = false);
+
+  document.getElementById("clearPad").onclick = () => {
+    ctx.clearRect(0, 0, cv.width, cv.height); drew = false;
+  };
+  document.getElementById("donePad").onclick = () => {
+    if(!drew){ speak("trace-first", "Trace the letter with your finger first"); return; }
+    if(award(L, "trace")) cheer();
+    speak("praise-trace", "Beautiful writing!");
+    ctx.clearRect(0, 0, cv.width, cv.height); drew = false;
+  };
+}
+
+/* ---------------- game ---------------- */
+let gameRound = null, gameScore = 0, gameMode = "find";
+
+function gamePool(){
+  const mine = nameLetters();
+  const known = DATA.filter(d => starsFor(d.L) > 0).map(d => d.L);
+  let pool = [...new Set([...mine, ...known])];
+  if(pool.length < 4) pool = [...new Set([...pool, "A","B","C","M","S","T"])];
+  return pool;
+}
+function renderGame(){
+  const pool = gamePool();
+  const target = pool[Math.floor(Math.random() * pool.length)];
+  const others = DATA.map(d => d.L).filter(L => L !== target).sort(() => Math.random() - .5).slice(0, 2);
+  const opts = [target, ...others].sort(() => Math.random() - .5);
+  gameRound = { target: target, mode: gameMode };
+
+  let head, tiles;
+  if(gameMode === "find"){
+    head = '<div class="prompt">Which one is ' + target + '?<small>Tap the letter you hear</small></div>';
+    tiles = opts.map(L => '<button class="choice" data-pick="' + L + '">' + L + '</button>').join("");
+    speak("find-" + target, "Find the letter " + target);
+  } else {
+    const d = byL[target];
+    head = '<div class="prompt">Which one starts with ' + d.s + '?<small>Tap the picture</small></div>';
+    tiles = opts.map(L => '<button class="choice pic" data-pick="' + L + '"><span>' + byL[L].e +
+      '</span><span class="cap">' + byL[L].w.toLowerCase() + '</span></button>').join("");
+    speak("which-" + target, d.say + ", " + d.say + ". Which one starts with " + d.say + "?", 0.7);
+  }
+
+  screenEl.innerHTML =
+    '<div class="row" style="margin-top:12px">' +
+      '<button class="btn ' + (gameMode === "find" ? "" : "ghost") + '" data-mode="find">Find the letter</button>' +
+      (S.phonics ? '<button class="btn ' + (gameMode === "sound" ? "" : "ghost") + '" data-mode="sound">Match the sound</button>'
+                 : '<button class="btn ghost" data-mode="locked">🔒 Sounds</button>') +
+    '</div>' +
+    head +
+    '<div class="choices">' + tiles + '</div>' +
+    '<div class="score">' + "⭐".repeat(Math.min(gameScore, 10)) + '</div>' +
+    '<button class="btn wide ghost" data-repeat="1">🔊 Say it again</button>';
+}
+function answer(L, btn){
+  if(!gameRound) return;
+  if(L === gameRound.target){
+    btn.classList.add("right");
+    gameScore++;
+    const fresh = award(gameRound.target, "game");
+    if(fresh) cheer(); else if(gameScore % 5 === 0) cheer();
+    speak("yes-" + gameRound.target, "Yes! " + gameRound.target + "!");
+    setTimeout(renderGame, 1100);
+  } else {
+    btn.classList.add("wrong");
+    speak("try-again", "Not that one. Try again.");
+    setTimeout(() => btn.classList.remove("wrong"), 400);
+  }
+}
+
+/* ---------------- parent area ---------------- */
+function openParent(){
+  const a = 3 + Math.floor(Math.random() * 6), b = 4 + Math.floor(Math.random() * 6);
+  const ans = a * b;
+  const opts = [ans, ans + 3, ans - 5, ans + 8].sort(() => Math.random() - .5);
+  const veil = document.createElement("div");
+  veil.className = "veil";
+  veil.innerHTML = '<div class="sheet"><h2>Grown-ups only</h2>' +
+    '<p class="sub">What is ' + a + ' × ' + b + '?</p>' +
+    '<div class="gate-keys">' + opts.map(o => '<button class="btn" data-ans="' + o + '">' + o + '</button>').join("") + '</div>' +
+    '<button class="btn wide ghost" data-close="1">Cancel</button></div>';
+  veil.addEventListener("click", e => {
+    if(e.target === veil || e.target.dataset.close) return veil.remove();
+    const v = e.target.dataset.ans;
+    if(v === undefined) return;
+    if(Number(v) === ans){ veil.remove(); parentPanel(); }
+    else { e.target.classList.add("wrong"); }
+  });
+  document.body.appendChild(veil);
+}
+
+function parentPanel(){
+  const veil = document.createElement("div");
+  veil.className = "veil";
+  veil.innerHTML = '<div class="sheet">' +
+    '<h2>Grown-ups</h2>' +
+    '<p class="sub">Everything saves on this device. Nothing is sent anywhere.</p>' +
+
+    '<label class="sub" style="display:block">Her name</label>' +
+    '<input type="text" id="pName" value="' + (S.name || "") + '" placeholder="First name">' +
+
+    '<div class="toggle"><div><b>Phase 2: phonics</b>' +
+      '<div class="t-txt">Adds letter sounds to every letter card and unlocks the “Match the sound” game. ' +
+      'Turn it on once she can spot most letters by name.</div></div>' +
+      '<button class="switch" id="phToggle" data-on="' + (S.phonics ? "1" : "0") + '"><i></i></button></div>' +
+
+    '<div class="toggle"><div><b>Use a voice pack</b>' +
+      '<div class="t-txt">Plays MP3 clips from a folder next to this file instead of the device voice. ' +
+      'Any clip that is missing falls back to the device voice on its own.</div></div>' +
+      '<button class="switch" id="auToggle" data-on="' + (S.audio ? "1" : "0") + '"><i></i></button></div>' +
+    '<input type="text" id="pBase" value="' + (S.audioBase || "audio/") + '" placeholder="audio/">' +
+
+    '<label class="sub" style="display:block;margin-top:12px"><b>Alphabet song video</b><br>' +
+    'Paste a YouTube link. Leave any of these blank and the app opens a YouTube search instead.</label>' +
+    '<input type="text" id="pSong" value="' + (S.song || "") + '" placeholder="youtube.com/watch?v=…">' +
+
+    '<label class="sub" style="display:block;margin-top:16px"><b>A video per letter</b></label>' +
+    '<div id="vidList">' + DATA.map(d =>
+      '<div class="vidrow"><b>' + d.L + '</b><input type="text" data-vid="' + d.L + '" value="' +
+      (S.videos[d.L] || "") + '" placeholder="YouTube link"></div>').join("") + '</div>' +
+
+    '<button class="btn wide" data-save="1">Save</button>' +
+    '<button class="btn wide ghost" data-reset="1">Clear all stars</button>' +
+    '<button class="btn wide ghost" data-close="1">Close</button></div>';
+
+  veil.addEventListener("click", e => {
+    const t = e.target;
+    if(t === veil || t.dataset.close) return veil.remove();
+    const swId = t.classList.contains("switch") ? t.id : (t.parentElement.classList.contains("switch") ? t.parentElement.id : null);
+    if(swId){
+      const sw = document.getElementById(swId);
+      sw.dataset.on = sw.dataset.on === "1" ? "0" : "1";
+      return;
+    }
+    if(t.dataset.reset){
+      S.stars = {}; save(); render(); veil.remove(); return;
+    }
+    if(t.dataset.save){
+      S.name = veil.querySelector("#pName").value.trim();
+      S.song = veil.querySelector("#pSong").value.trim();
+      S.phonics = document.getElementById("phToggle").dataset.on === "1";
+      S.audio = document.getElementById("auToggle").dataset.on === "1";
+      S.audioBase = veil.querySelector("#pBase").value.trim() || "audio/";
+      veil.querySelectorAll("[data-vid]").forEach(i => { S.videos[i.dataset.vid] = i.value.trim(); });
+      save(); veil.remove(); render();
+    }
+  });
+  document.body.appendChild(veil);
+}
+
+/* ---------------- routing ---------------- */
+function render(){
+  document.getElementById("brandTxt").textContent = S.name ? S.name + "'s letters" : "Letter Board";
+  document.querySelectorAll("#nav button").forEach(b => {
+    b.dataset.active = (b.dataset.go === screen || (screen === "letter" && b.dataset.go === "home")) ? "1" : "0";
+  });
+  if(screen === "home") renderHome();
+  else if(screen === "letter") renderLetter(currentLetter);
+  else if(screen === "game") renderGame();
+}
+
+document.getElementById("nav").addEventListener("click", e => {
+  const b = e.target.closest("button"); if(!b) return;
+  if(b.dataset.go === "sing"){
+    openVideo("Sing the alphabet", parseId(S.song), "alphabet song for kids abc");
+    return;
+  }
+  screen = b.dataset.go;
+  if(screen === "game"){ gameScore = 0; if(!S.phonics) gameMode = "find"; }
+  render();
+});
+
+screenEl.addEventListener("click", e => {
+  const b = e.target.closest("button"); if(!b) return;
+  if(b.dataset.letter){ currentLetter = b.dataset.letter; screen = "letter"; render(); return; }
+  if(b.dataset.go){ screen = b.dataset.go; render(); return; }
+  if(b.dataset.mode){
+    if(b.dataset.mode === "locked"){
+      speak("ask-grownup", "Ask a grown-up to turn on sounds");
+      return;
+    }
+    gameMode = b.dataset.mode; renderGame(); return;
+  }
+  if(b.dataset.repeat){
+    const d = byL[gameRound.target];
+    if(gameRound.mode === "find") speak("find-" + d.L, "Find the letter " + d.L);
+    else speak("which-" + d.L, d.say + ", " + d.say + ". Which one starts with " + d.say + "?", 0.7);
+    return;
+  }
+  if(b.dataset.pick){ answer(b.dataset.pick, b); return; }
+});
+
+document.getElementById("gearBtn").onclick = openParent;
+
+load().then(render);
+</script>
