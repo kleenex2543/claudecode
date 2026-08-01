@@ -1,0 +1,10 @@
+# Generated voice-pack audio (create locally with make-voices.py)
+audio/
+
+# Local safety backups
+_backup/
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+desktop.ini
